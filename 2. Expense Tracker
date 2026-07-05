@@ -1,0 +1,90 @@
+EXPENSE_FILE = 'expenses.txt'
+
+def log_expense():
+    """Logs a new expense to the expenses.txt file."""
+    print("\n--- Log New Expense ---")
+    try:
+        date = input("Enter date (YYYY-MM-DD): ").strip()
+        description = input("Enter description: ").strip()
+        category = input("Enter category: ").strip()
+        amount = float(input("Enter amount: ").strip())
+
+        if not all([date, description, category]) or amount <= 0:
+            print("Invalid input: Date, description, category cannot be empty, and amount must be positive.")
+            return
+
+        with open(EXPENSE_FILE, 'a') as f:
+            f.write(f"{date},{description},{category},{amount:.2f}\n")
+        print("Expense logged successfully!")
+    except ValueError:
+        print("Invalid amount. Please enter a numerical value.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+def read_expenses():
+    """Reads all expenses from the expenses.txt file and returns them as a list of dictionaries."""
+    expenses = []
+    try:
+        with open(EXPENSE_FILE, 'r') as f:
+            for line in f:
+                parts = line.strip().split(',')
+                if len(parts) == 4:
+                    try:
+                        expense = {
+                            'date': parts[0],
+                            'description': parts[1],
+                            'category': parts[2],
+                            'amount': float(parts[3])
+                        }
+                        expenses.append(expense)
+                    except ValueError:
+                        print(f"Skipping malformed line (amount not a number): {line.strip()}")
+                else:
+                    print(f"Skipping malformed line (incorrect number of fields): {line.strip()}")
+    except FileNotFoundError:
+        print("No expense file found. Start by logging some expenses!")
+    except Exception as e:
+        print(f"Error reading expenses: {e}")
+    return expenses
+def summarize_expenses_by_category():
+    """Reads expenses and summarizes total amount by category."""
+    print("\n--- Expense Summary by Category ---")
+    expenses = read_expenses()
+    if not expenses:
+        print("No expenses to summarize.")
+        return
+
+    category_summary = {}
+    for expense in expenses:
+        category = expense['category'].lower()
+        amount = expense['amount']
+        category_summary[category] = category_summary.get(category, 0) + amount
+
+    if category_summary:
+        print("Category | Total Amount")
+        print("----------------------")
+        for category, total_amount in category_summary.items():
+            print(f"{category:<10} | {total_amount:,.2f}")
+    else:
+        print("No valid expenses found for summary.")
+def expense_tracker_main():
+    """Main function for the expense tracker system."""
+    while True:
+        print("\n--- Expense Tracker Menu ---")
+        print("1. Log New Expense")
+        print("2. View Expense Summary by Category")
+        print("3. Exit")
+
+        choice = input("Enter your choice (1-3): ").strip()
+
+        if choice == '1':
+            log_expense()
+        elif choice == '2':
+            summarize_expenses_by_category()
+        elif choice == '3':
+            print("Exiting Expense Tracker. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please enter a number between 1 and 3.")
+
+# To run the Expense Tracker, uncomment the line below:
+# expense_tracker_main()
