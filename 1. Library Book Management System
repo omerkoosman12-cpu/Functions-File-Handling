@@ -1,0 +1,133 @@
+import pandas as pd
+import os
+
+BOOK_CSV_FILE = 'library_books.csv'
+
+def load_books():
+    """Loads books from a CSV file into a pandas DataFrame."""
+    if os.path.exists(BOOK_CSV_FILE):
+        try:
+            df = pd.read_csv(BOOK_CSV_FILE)
+            # Ensure the DataFrame has the expected columns, if not, re-initialize
+            expected_columns = ['Title', 'Author', 'ISBN', 'Genre', 'Quantity']
+            if not all(col in df.columns for col in expected_columns):
+                print("Warning: CSV file has unexpected columns. Re-initializing library.")
+                df = pd.DataFrame(columns=expected_columns)
+            return df
+        except pd.errors.EmptyDataError:
+            print("CSV file is empty. Initializing an empty library.")
+            return pd.DataFrame(columns=['Title', 'Author', 'ISBN', 'Genre', 'Quantity'])
+        except Exception as e:
+            print(f"Error loading CSV: {e}. Initializing an empty library.")
+            return pd.DataFrame(columns=['Title', 'Author', 'ISBN', 'Genre', 'Quantity'])
+    else:
+        print("No existing library file found. Creating a new one.")
+        return pd.DataFrame(columns=['Title', 'Author', 'ISBN', 'Genre', 'Quantity'])
+def save_books(df):
+    """Saves the DataFrame of books to a CSV file."""
+    try:
+        df.to_csv(BOOK_CSV_FILE, index=False)
+        print("Library data saved successfully.")
+    except Exception as e:
+        print(f"Error saving data: {e}")
+def add_book(df):
+    """Adds a new book to the library DataFrame."""
+    print("\n--- Add New Book ---")
+    title = input("Enter Title: ").strip()
+    author = input("Enter Author: ").strip()
+    isbn = input("Enter ISBN: ").strip()
+    genre = input("Enter Genre: ").strip()
+    try:
+        quantity = int(input("Enter Quantity: ").strip())
+        if quantity < 0:
+            raise ValueError("Quantity cannot be negative.")
+    except ValueError:
+        print("Invalid quantity. Please enter a non-negative integer.")
+        return df
+
+    if not all([title, author, isbn, genre]):
+        print("All fields must be filled. Book not added.")
+        return df
+
+    # Check for existing book by ISBN
+    if isbn in df['ISBN'].values:
+        print(f"Book with ISBN '{isbn}' already exists. Updating quantity.")
+        df.loc[df['ISBN'] == isbn, 'Quantity'] += quantity
+    else:
+        new_book = pd.DataFrame([{'Title': title, 'Author': author, 'ISBN': isbn, 'Genre': genre, 'Quantity': quantity}])
+        df = pd.concat([df, new_book], ignore_index=True)
+    print("Book added/updated successfully!")
+    return df
+def remove_book(df):
+    """Removes a book from the library DataFrame by ISBN or Title."""
+    print("\n--- Remove Book ---")
+    search_term = input("Enter ISBN or Title of the book to remove: ").strip().lower()
+
+    initial_count = len(df)
+    df_filtered = df[(df['ISBN'].str.lower() != search_term) & (df['Title'].str.lower() != search_term)]
+
+    if len(df_filtered) < initial_count:
+        print(f"Book(s) matching '{search_term}' removed successfully.")
+        return df_filtered
+    else:
+        print(f"No book found with ISBN or Title matching '{search_term}'.")
+        return df
+def search_book(df):
+    """Searches for books by Title, Author, ISBN, or Genre."""
+    print("\n--- Search Book ---")
+    search_term = input("Enter search term (Title, Author, ISBN, or Genre): ").strip().lower()
+
+    if not search_term:
+        print("Search term cannot be empty.")
+        return
+
+    results = df[
+        df['Title'].str.lower().str.contains(search_term, na=False) |
+        df['Author'].str.lower().str.contains(search_term, na=False) |
+        df['ISBN'].str.lower().str.contains(search_term, na=False) |
+        df['Genre'].str.lower().str.contains(search_term, na=False)
+    ]
+
+    if not results.empty:
+        print("\nSearch Results:")
+        display(results)
+    else:
+        print(f"No books found matching '{search_term}'.")
+def view_all_books(df):
+    """Displays all books currently in the library."""
+    print("\n--- All Books in Library ---")
+    if df.empty:
+        print("The library is currently empty.")
+    else:
+        display(df)
+def main():
+    """Main function to run the library management system."""
+    books_df = load_books()
+
+    while True:
+        print("\n--- Library Management System ---")
+        print("1. Add Book")
+        print("2. Remove Book")
+        print("3. Search Book")
+        print("4. View All Books")
+        print("5. Exit")
+
+        choice = input("Enter your choice (1-5): ").strip()
+
+        if choice == '1':
+            books_df = add_book(books_df)
+            save_books(books_df)
+        elif choice == '2':
+            books_df = remove_book(books_df)
+            save_books(books_df)
+        elif choice == '3':
+            search_book(books_df)
+        elif choice == '4':
+            view_all_books(books_df)
+        elif choice == '5':
+            print("Exiting Library Management System. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please enter a number between 1 and 5.")
+
+main()
