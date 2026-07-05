@@ -1,0 +1,106 @@
+import pandas as pd
+import os
+
+STUDENT_DATA_FILE = 'students.csv'
+GRADED_STUDENT_DATA_FILE = 'students_graded.csv'
+
+def load_student_data(file_path=STUDENT_DATA_FILE):
+    """Loads student data from a CSV file into a pandas DataFrame."""
+    if not os.path.exists(file_path):
+        print(f"Error: File '{file_path}' not found.")
+        return None
+    try:
+        df = pd.read_csv(file_path)
+        print(f"Successfully loaded data from '{file_path}'.")
+        return df
+    except pd.errors.EmptyDataError:
+        print(f"Error: '{file_path}' is empty.")
+        return None
+    except Exception as e:
+        print(f"Error loading student data from '{file_path}': {e}")
+        return None
+def calculate_grades(df):
+    """Calculates grades based on 'Score' column and adds a 'Grade' column."""
+    if df is None or df.empty:
+        print("No student data to process.")
+        return None
+
+    if 'Score' not in df.columns:
+        print("Error: 'Score' column not found in the student data. Cannot calculate grades.")
+        return df
+
+    # Ensure 'Score' column is numeric
+    df['Score'] = pd.to_numeric(df['Score'], errors='coerce')
+    if df['Score'].isnull().any():
+        print("Warning: Some scores are non-numeric and have been converted to NaN. Grades for these will be 'N/A'.")
+
+    def assign_grade(score):
+        if pd.isna(score): # Handle NaN scores after coercion
+            return 'N/A'
+        elif score >= 90:
+            return 'A'
+        elif score >= 80:
+            return 'B'
+        elif score >= 70:
+            return 'C'
+        elif score >= 60:
+            return 'D'
+        else:
+            return 'F'
+
+    df['Grade'] = df['Score'].apply(assign_grade)
+    print("Grades calculated successfully and added to the DataFrame.")
+    return df
+def save_graded_data(df, file_path=GRADED_STUDENT_DATA_FILE):
+    """Saves the DataFrame with grades to a new CSV file."""
+    if df is None or df.empty:
+        print("No data to save.")
+        return
+    try:
+        df.to_csv(file_path, index=False)
+        print(f"Graded student data saved successfully to '{file_path}'.")
+    except Exception as e:
+        print(f"Error saving graded data to '{file_path}': {e}")
+def student_grade_manager_main():
+    """Main function for the student grade file manager system."""
+    student_df = None
+    while True:
+        print("\n--- Student Grade File Manager Menu ---")
+        print("1. Load Student Data (from students.csv)")
+        print("2. Compute Grades")
+        print("3. View Current Data")
+        print("4. Save Graded Data (to students_graded.csv)")
+        print("5. Exit")
+
+        choice = input("Enter your choice (1-5): ").strip()
+
+        if choice == '1':
+            student_df = load_student_data()
+            if student_df is not None:
+                display(student_df.head())
+        elif choice == '2':
+            if student_df is not None:
+                student_df = calculate_grades(student_df)
+                if student_df is not None:
+                    display(student_df.head())
+            else:
+                print("Please load student data first (Option 1).")
+        elif choice == '3':
+            if student_df is not None:
+                print("\n--- Current Student Data ---")
+                display(student_df)
+            else:
+                print("No student data loaded.")
+        elif choice == '4':
+            if student_df is not None:
+                save_graded_data(student_df)
+            else:
+                print("No data to save. Please load and compute grades first.")
+        elif choice == '5':
+            print("Exiting Student Grade File Manager. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please enter a number between 1 and 5.")
+
+# To run the Student Grade File Manager, uncomment the line below:
+# student_grade_manager_main()
